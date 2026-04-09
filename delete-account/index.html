@@ -32,47 +32,125 @@
       background: #dc2626;
       color: white;
       border-radius: 8px;
-      text-decoration: none;
+      border: none;
       font-weight: 600;
       font-size: 15px;
+      cursor: pointer;
+      width: 100%;
+      text-align: center;
     }
     .btn:hover { background: #b91c1c; }
+    .btn:disabled { background: #999; cursor: not-allowed; }
     .note {
       margin-top: 24px;
       font-size: 13px;
       color: #888;
     }
     a.mail { color: #0070f3; }
+    .success {
+      text-align: center;
+      padding: 40px 24px;
+    }
+    .success h2 { color: #8B5CF6; font-size: 22px; }
+    .no-token {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-top: 16px;
+      font-size: 14px;
+      color: #856404;
+    }
   </style>
 </head>
 <body>
 
-  <h1>Supprimer mon compte System Life</h1>
-  <p>Vous pouvez demander la suppression de votre compte et de toutes vos données personnelles à tout moment.</p>
+  <div id="main-content">
+    <h1>Supprimer mon compte System Life</h1>
+    <p>Vous pouvez demander la suppression de votre compte et de toutes vos données personnelles à tout moment.</p>
 
-  <div class="card">
-    <strong>Ce qui sera supprimé :</strong>
-    <ul class="steps">
-      <li>Votre adresse e-mail et mot de passe</li>
-      <li>Votre historique de quêtes et progression</li>
-      <li>Votre profil et toutes les données associées</li>
-    </ul>
+    <div class="card">
+      <strong>Ce qui sera supprimé :</strong>
+      <ul class="steps">
+        <li>Votre adresse e-mail et mot de passe</li>
+        <li>Votre historique de quêtes et progression</li>
+        <li>Votre profil et toutes les données associées</li>
+      </ul>
 
-    <strong>Délai de suppression :</strong>
-    <p>Vos données seront effacées dans un délai de <strong>30 jours</strong> suivant votre demande.</p>
+      <strong>Délai de suppression :</strong>
+      <p>Vos données seront effacées <strong>immédiatement</strong> après confirmation.</p>
 
-    <strong>Comment faire une demande :</strong>
-    <p>Envoyez un email à notre équipe avec l'objet <em>"Suppression de compte"</em> et l'adresse email associée à votre compte.</p>
+      <strong>Attention :</strong>
+      <p>Cette action est <strong>irréversible</strong>. Votre abonnement actif ne sera pas remboursé automatiquement.</p>
 
-    <a class="btn" href="mailto:contact@systemlife.app?subject=Suppression%20de%20mon%20compte&body=Bonjour%2C%0A%0AJe%20souhaite%20supprimer%20mon%20compte%20System%20Life.%0A%0AEmail%20associ%C3%A9%20%3A%20">
-      Envoyer une demande de suppression
-    </a>
+      <div id="no-token-msg" class="no-token" style="display:none;">
+        ⚠ Session introuvable. Ouvre cette page depuis l'application System Life pour supprimer ton compte automatiquement.<br/><br/>
+        Ou contacte-nous : <a class="mail" href="mailto:contact@systemlife.app">contact@systemlife.app</a>
+      </div>
 
-    <p class="note">
-      &#9888; La suppression est irréversible. Votre abonnement actif ne sera pas remboursé automatiquement.<br/>
-      Pour toute question : <a class="mail" href="mailto:contact@systemlife.app">contact@systemlife.app</a>
-    </p>
+      <button id="delete-btn" class="btn" onclick="deleteAccount()">
+        Supprimer définitivement mon compte
+      </button>
+
+      <p class="note">
+        Pour toute question : <a class="mail" href="mailto:contact@systemlife.app">contact@systemlife.app</a>
+      </p>
+    </div>
   </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+
+    // Si pas de token, affiche un message d'avertissement
+    if (!token) {
+      document.getElementById('no-token-msg').style.display = 'block';
+      document.getElementById('delete-btn').disabled = true;
+    }
+
+    async function deleteAccount() {
+      if (!token) {
+        alert('Session introuvable. Ouvre cette page depuis l\'application System Life.');
+        return;
+      }
+
+      if (!confirm('Es-tu sûr de vouloir supprimer ton compte ? Cette action est irréversible.')) return;
+
+      const btn = document.getElementById('delete-btn');
+      btn.disabled = true;
+      btn.textContent = 'Suppression en cours...';
+
+      try {
+        const res = await fetch('https://jlekiqtnpjxdqxkswawb.supabase.co/functions/v1/delete-account', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (res.ok) {
+          document.getElementById('main-content').innerHTML = `
+            <div class="success">
+              <h2>✓ Compte supprimé</h2>
+              <p>Ton compte et toutes tes données ont été supprimés définitivement.</p>
+              <p style="color:#888; font-size:13px; margin-top:24px;">
+                System Life by Stat-Up · <a href="https://privacy.systemlife.app" style="color:#8B5CF6;">Confidentialité</a>
+              </p>
+            </div>
+          `;
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Supprimer définitivement mon compte';
+          alert('Erreur lors de la suppression. Contacte contact@systemlife.app');
+        }
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Supprimer définitivement mon compte';
+        alert('Erreur réseau. Réessaie ou contacte contact@systemlife.app');
+      }
+    }
+  </script>
 
 </body>
 </html>
